@@ -575,18 +575,15 @@ jwtInput.addEventListener('input', () => {
 });
 
 // Real-time update for header
-headerJson.addEventListener('input', async () => {
+headerJson.addEventListener('input', () => {
   const newHeaderText = headerJson.textContent;
   try {
     const newHeader = JSON.parse(newHeaderText);
     const currentToken = jwtInput.value.trim();
-    const tokenMeta = parseJwt(currentToken);
-    if (tokenMeta) {
+    const parts = currentToken.split('.');
+    if (parts.length === 3) {
       const newHeaderEncoded = base64UrlEncode(JSON.stringify(newHeader));
-      const payloadEncoded = base64UrlEncode(JSON.stringify(tokenMeta.payload));
-      const data = `${newHeaderEncoded}.${payloadEncoded}`;
-      const newSignature = await computeSignature(data, secret);
-      const newToken = `${data}.${newSignature}`;
+      const newToken = `${newHeaderEncoded}.${parts[1]}.${parts[2]}`;
       jwtInput.value = newToken;
       // Update algorithm
       algoSelect.value = newHeader.alg || 'HS256';
@@ -598,18 +595,15 @@ headerJson.addEventListener('input', async () => {
 });
 
 // Real-time update for payload
-payloadJson.addEventListener('input', async () => {
+payloadJson.addEventListener('input', () => {
   const newPayloadText = payloadJson.textContent;
   try {
     const newPayload = JSON.parse(newPayloadText);
     const currentToken = jwtInput.value.trim();
-    const tokenMeta = parseJwt(currentToken);
-    if (tokenMeta) {
-      const headerEncoded = base64UrlEncode(JSON.stringify(tokenMeta.header));
+    const parts = currentToken.split('.');
+    if (parts.length === 3) {
       const newPayloadEncoded = base64UrlEncode(JSON.stringify(newPayload));
-      const data = `${headerEncoded}.${newPayloadEncoded}`;
-      const newSignature = await computeSignature(data, secret, tokenMeta.header.alg);
-      const newToken = `${data}.${newSignature}`;
+      const newToken = `${parts[0]}.${newPayloadEncoded}.${parts[2]}`;
       jwtInput.value = newToken;
       updateStatus(parseJwt(newToken));
     }
