@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JWT Debugger</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <main class="main-stage">
+      <section class="input-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">JWT Debugger</p>
+            <h1>Inspect JSON Web Tokens instantly</h1>
+          </div>
+          <div class="main-actions">
+            <button id="clipboardBtn">Clipboard</button>
+            <button id="sampleBtn">Sample</button>
+            <button id="clearBtn">Clear</button>
+          </div>
+        </div>
+
+        <textarea
+          id="jwtInput"
+          spellcheck="false"
+          placeholder="Paste your JWT here"
+        ></textarea>
+
+        <div class="status-row">
+          <div class="status-pill" id="statusMessage">
+              <span class="status-icon">✔</span>
+              <span class="status-label">Signature status</span>
+            </div>
+          <label class="algo">
+            Algorithm
+            <select id="algoSelect">
+              <option>HS256</option>
+              <option>RS256</option>
+              <option>ES256</option>
+              <option>PS256</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="decode-panel">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <p class="card-label">Header</p>
+              <small>typ · alg</small>
+            </div>
+            <button class="mini" data-copy-target="headerJson">Copy</button>
+          </div>
+          <pre id="headerJson">{ }</pre>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <p class="card-label">Payload</p>
+              <small>iss · sub · exp · iat</small>
+            </div>
+            <button class="mini" data-copy-target="payloadJson">Copy</button>
+          </div>
+          <pre id="payloadJson">{ }</pre>
+        </article>
+
+        <article class="card signature-card">
+          <div class="card-head">
+            <p class="card-label">Signature</p>
+            <small>HMACSHA256</small>
+          </div>
+          <code>
+HMACSHA256(
+  base64UrlEncode(header) + '.' + base64UrlEncode(payload),
+  your-secret
+)
+          </code>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
