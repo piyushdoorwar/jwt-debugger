@@ -22,7 +22,17 @@ const copyBtn = document.getElementById('copyBtn');
 const pasteBtn = document.getElementById('pasteBtn');
 const sampleBtn = document.getElementById('sampleBtn');
 const clearBtn = document.getElementById('clearBtn');
+const algoSelect = document.getElementById('algoSelect');
+// const applyHeaderBtn = document.getElementById('applyHeaderBtn');
+// const applyPayloadBtn = document.getElementById('applyPayloadBtn');
 // const timeCopyBtn = document.getElementById('timeCopy');
+
+function base64UrlEncode(str) {
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
 
 function base64UrlDecode(str) {
   try {
@@ -85,19 +95,22 @@ function prettyPrint(json) {
 function updateDisplay(token) {
   const tokenMeta = parseJwt(token);
   if (!tokenMeta) {
-    headerJson.textContent = '{ }';
-    payloadJson.textContent = '{ }';
+    if (headerJson !== document.activeElement) headerJson.textContent = '{ }';
+    if (payloadJson !== document.activeElement) payloadJson.textContent = '{ }';
     // expiryText.textContent = '—';
     // issuedText.textContent = '—';
-    // timeLeftText.textContent = '—';
+    // timeLeftText.content = '—';
     // setUnixField(Math.floor(Date.now() / 1000));
     // updateTimePanel(parseInt(unixInput.value, 10));
     updateStatus(null);
     return;
   }
 
-  headerJson.textContent = prettyPrint(tokenMeta.header);
-  payloadJson.textContent = prettyPrint(tokenMeta.payload);
+  if (headerJson !== document.activeElement) headerJson.textContent = prettyPrint(tokenMeta.header);
+  if (payloadJson !== document.activeElement) payloadJson.textContent = prettyPrint(tokenMeta.payload);
+
+  // Update algorithm dropdown
+  algoSelect.value = tokenMeta.header.alg || 'HS256';
   // if (tokenMeta.payload.exp) {
   //   expiryText.textContent = new Date(tokenMeta.payload.exp * 1000).toLocaleString();
   // } else {
@@ -272,6 +285,61 @@ jwtInput.addEventListener('input', () => {
   updateDisplay(jwtInput.value.trim());
 });
 
+// Real-time update for header
+headerJson.addEventListener('input', () => {
+  const newHeaderText = headerJson.textContent;
+  try {
+    const newHeader = JSON.parse(newHeaderText);
+    const currentToken = jwtInput.value.trim();
+    const tokenMeta = parseJwt(currentToken);
+    if (tokenMeta) {
+      const newHeaderEncoded = base64UrlEncode(JSON.stringify(newHeader));
+      const payloadEncoded = base64UrlEncode(JSON.stringify(tokenMeta.payload));
+      const newToken = `${newHeaderEncoded}.${payloadEncoded}.${tokenMeta.signature}`;
+      jwtInput.value = newToken;
+      // Update algorithm
+      algoSelect.value = newHeader.alg || 'HS256';
+      updateStatus(parseJwt(newToken));
+    }
+  } catch (e) {
+    // Invalid JSON, do nothing
+  }
+});
+
+// Real-time update for payload
+payloadJson.addEventListener('input', () => {
+  const newPayloadText = payloadJson.textContent;
+  try {
+    const newPayload = JSON.parse(newPayloadText);
+    const currentToken = jwtInput.value.trim();
+    const tokenMeta = parseJwt(currentToken);
+    if (tokenMeta) {
+      const headerEncoded = base64UrlEncode(JSON.stringify(tokenMeta.header));
+      const newPayloadEncoded = base64UrlEncode(JSON.stringify(newPayload));
+      const newToken = `${headerEncoded}.${newPayloadEncoded}.${tokenMeta.signature}`;
+      jwtInput.value = newToken;
+      updateStatus(parseJwt(newToken));
+    }
+  } catch (e) {
+    // Invalid JSON, do nothing
+  }
+});
+
+// Update algorithm dropdown when changed
+algoSelect.addEventListener('change', () => {
+  const currentToken = jwtInput.value.trim();
+  const tokenMeta = parseJwt(currentToken);
+  if (tokenMeta) {
+    const newHeader = { ...tokenMeta.header, alg: algoSelect.value };
+    headerJson.textContent = JSON.stringify(newHeader, null, 2);
+    const newHeaderEncoded = base64UrlEncode(JSON.stringify(newHeader));
+    const payloadEncoded = base64UrlEncode(JSON.stringify(tokenMeta.payload));
+    const newToken = `${newHeaderEncoded}.${payloadEncoded}.${tokenMeta.signature}`;
+    jwtInput.value = newToken;
+    updateStatus(parseJwt(newToken));
+  }
+});
+
 // Copy button functionality
 copyBtn.addEventListener('click', () => {
   if (jwtInput.value.trim()) {
@@ -291,7 +359,6 @@ pasteBtn.addEventListener('click', async () => {
     showToast('JWT pasted from clipboard');
   } catch (err) {
     showToast('Failed to paste from clipboard');
-    console.warn('clipboard not accessible');
   }
 });
 
