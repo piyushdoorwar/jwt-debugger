@@ -63,20 +63,51 @@ function base64UrlDecode(str) {
   }
 }
 
-async function computeSignature(data, secret) {
-  if (!secret) return '';
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
+async function computeSignature(data, secret, alg) {
+  if (alg === 'HS256') {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
+    return btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+  } else if (alg === 'RS256') {
+    const key = await importRsaPrivateKey(secret);
+    const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(data));
+    return btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+  } else {
+    return '';
+  }
+}
+
+function importRsaPrivateKey(pem) {
+  const pemHeader = "-----BEGIN PRIVATE KEY-----";
+  const pemFooter = "-----END PRIVATE KEY-----";
+  const pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
+  const binaryDer = atob(pemContents);
+  const der = new Uint8Array(binaryDer.length);
+  for (let i = 0; i < binaryDer.length; i++) {
+    der[i] = binaryDer.charCodeAt(i);
+  }
+  return crypto.subtle.importKey(
+    'pkcs8',
+    der,
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256'
+    },
     false,
     ['sign']
   );
-  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
-  return btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
 }
 
 function parseJwt(token) {
@@ -124,7 +155,7 @@ async function updateJwt() {
     const headerEncoded = base64UrlEncode(JSON.stringify(tokenMeta.header));
     const payloadEncoded = base64UrlEncode(JSON.stringify(tokenMeta.payload));
     const data = `${headerEncoded}.${payloadEncoded}`;
-    const newSignature = await computeSignature(data, secret);
+    const newSignature = await computeSignature(data, secret, tokenMeta.header.alg);
     const newToken = `${data}.${newSignature}`;
     jwtInput.value = newToken;
     updateStatus(parseJwt(newToken));
@@ -403,10 +434,11 @@ secretEditable.addEventListener('blur', () => {
 verifyBtn.addEventListener('click', async () => {
   const currentToken = jwtInput.value.trim();
   const tokenMeta = parseJwt(currentToken);
-  if (tokenMeta && tokenMeta.signature && secret) {
+  const currentSecret = secretTextarea.value;
+  if (tokenMeta && tokenMeta.signature && currentSecret) {
     const data = base64UrlEncode(JSON.stringify(tokenMeta.header)) + '.' + base64UrlEncode(JSON.stringify(tokenMeta.payload));
     try {
-      const expected = await computeSignature(data, secret);
+      const expected = await computeSignature(data, currentSecret);
       if (expected === tokenMeta.signature) {
         statusMessage.classList.remove('invalid');
         statusIcon.textContent = '✔';
