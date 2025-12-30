@@ -245,6 +245,11 @@ body::before {
   font-size: 14px;
 }
 
+.algo select option {
+  background: var(--panel);
+  color: #fff;
+}
+
 .decode-panel {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -406,4 +411,27 @@ body::before {
   .panel-head {
     flex-direction: column;
   }
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--accent);
+  color: var(--bg);
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }

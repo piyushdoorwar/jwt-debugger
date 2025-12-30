@@ -18,7 +18,8 @@ const statusMessage = document.getElementById('statusMessage');
 
 const statusIcon = statusMessage.querySelector('.status-icon');
 const statusLabel = document.querySelector('.status-label');
-const clipboardBtn = document.getElementById('clipboardBtn');
+const copyBtn = document.getElementById('copyBtn');
+const pasteBtn = document.getElementById('pasteBtn');
 const sampleBtn = document.getElementById('sampleBtn');
 const clearBtn = document.getElementById('clearBtn');
 // const timeCopyBtn = document.getElementById('timeCopy');
@@ -197,11 +198,45 @@ function copyToClipboard(value) {
   });
 }
 
+function showToast(message) {
+  // Remove existing toast if any
+  const existingToast = document.querySelector('.toast');
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  // Create new toast
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  // Show toast
+  setTimeout(() => toast.classList.add('show'), 10);
+
+  // Hide and remove toast after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 document.querySelectorAll('[data-copy-target]').forEach((btn) => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.copyTarget;
     const element = document.getElementById(target);
-    copyToClipboard(element?.textContent ?? '');
+    const content = element?.textContent ?? '';
+    copyToClipboard(content);
+
+    // Show appropriate toast based on what was copied
+    let toastMessage = 'Copied';
+    if (target === 'headerJson') {
+      toastMessage = 'Header copied';
+    } else if (target === 'payloadJson') {
+      toastMessage = 'Payload copied';
+    }
+    showToast(toastMessage);
+
     btn.textContent = 'Copied';
     setTimeout(() => (btn.textContent = 'Copy'), 1200);
   });
@@ -211,28 +246,53 @@ document.querySelectorAll('[data-copy-target]').forEach((btn) => {
 //   copyToClipboard(unixInput.value);
 // });
 
-clipboardBtn.addEventListener('click', async () => {
-  try {
-    const text = await navigator.clipboard.readText();
-    jwtInput.value = text;
-    updateDisplay(text.trim());
-  } catch (err) {
-    console.warn('clipboard not accessible');
-  }
-});
+// clipboardBtn.addEventListener('click', async () => {
+//   try {
+//     const text = await navigator.clipboard.readText();
+//     jwtInput.value = text;
+//     updateDisplay(text.trim());
+//   } catch (err) {
+//     console.warn('clipboard not accessible');
+//   }
+// });
 
 sampleBtn.addEventListener('click', () => {
   jwtInput.value = sampleToken;
   updateDisplay(sampleToken);
+  showToast('Sample JWT loaded');
 });
 
 clearBtn.addEventListener('click', () => {
   jwtInput.value = '';
   updateDisplay('');
+  showToast('JWT cleared');
 });
 
 jwtInput.addEventListener('input', () => {
   updateDisplay(jwtInput.value.trim());
+});
+
+// Copy button functionality
+copyBtn.addEventListener('click', () => {
+  if (jwtInput.value.trim()) {
+    copyToClipboard(jwtInput.value.trim());
+    showToast('JWT copied to clipboard');
+  } else {
+    showToast('Nothing to copy');
+  }
+});
+
+// Paste button functionality
+pasteBtn.addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    jwtInput.value = text;
+    updateDisplay(text.trim());
+    showToast('JWT pasted from clipboard');
+  } catch (err) {
+    showToast('Failed to paste from clipboard');
+    console.warn('clipboard not accessible');
+  }
 });
 
 // unixInput.addEventListener('input', () => {
