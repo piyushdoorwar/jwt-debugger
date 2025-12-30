@@ -76,22 +76,36 @@
         <div class="card-head">
           <div>
             <p class="card-label">Secret</p>
-            <small>HMAC Secret Key</small>
+            <small id="secretDescription">Keys for verification and signing</small>
           </div>
-          <div class="card-actions">
-            <button class="mini" id="verifyBtn">Verify</button>
-            <button class="mini" id="applyBtn">Apply</button>
+          <div class="button-group">
+            <button id="verifyBtn" class="mini">Verify</button>
+            <button id="applyBtn" class="mini">Apply</button>
+            <button class="mini" data-copy-target="secretTextarea">Copy</button>
           </div>
         </div>
-        <textarea id="secretTextarea" placeholder="Enter your secret..."></textarea>
+        <div id="secretSection" class="key-section">
+          <label id="secretLabel">Secret</label>
+          <textarea id="secretTextarea" placeholder="Enter secret here..."></textarea>
+        </div>
+        <div id="asymSection" style="display: none;">
+          <div class="key-section">
+            <label>Public Key (for verification)</label>
+            <textarea id="publicKeyTextarea" placeholder="Paste public key here..."></textarea>
+          </div>
+          <div class="key-section">
+            <label>Private Key (for signing)</label>
+            <textarea id="privateKeyTextarea" placeholder="Paste private key here..."></textarea>
+          </div>
+        </div>
       </article>
 
       <article class="card signature-card">
         <div class="card-head">
           <p class="card-label">Signature</p>
-          <small>HMACSHA256</small>
+          <small id="sigAlgo">HMACSHA256</small>
         </div>
-        <code>
+        <code id="sigCode">
 HMACSHA256(
   base64UrlEncode(header) + '.' + base64UrlEncode(payload),
   <span id="secretEditable" contenteditable="true">your-secret</span>

@@ -5,10 +5,9 @@ const jwtInput = document.getElementById('jwtInput');
 const headerJson = document.getElementById('headerJson');
 const payloadJson = document.getElementById('payloadJson');
 const statusMessage = document.getElementById('statusMessage');
-const secretTextarea = document.getElementById('secretTextarea');
+const publicKeyTextarea = document.getElementById('publicKeyTextarea');
+const privateKeyTextarea = document.getElementById('privateKeyTextarea');
 const secretEditable = document.getElementById('secretEditable');
-const verifyBtn = document.getElementById('verifyBtn');
-const applyBtn = document.getElementById('applyBtn');
 let secret = '';
 // const unixInput = document.getElementById('unixInput');
 // const localTime = document.getElementById('localTime');
@@ -39,6 +38,30 @@ const iatRelativeSpan = document.getElementById('iatRelativeSpan');
 const expRelativeSpan = document.getElementById('expRelativeSpan');
 const updateDatetimeBtn = document.getElementById('updateDatetimeBtn');
 const closeModal = datetimeModal.querySelector('.close');
+const verifyBtn = document.getElementById('verifyBtn');
+const applyBtn = document.getElementById('applyBtn');
+const secretTextarea = document.getElementById('secretTextarea');
+const asymSection = document.getElementById('asymSection');
+const secretDescription = document.getElementById('secretDescription');
+const secretLabel = document.getElementById('secretLabel');
+const secretSection = document.getElementById('secretSection');
+
+function updateSecretSections() {
+  const algo = algoSelect.value;
+  const copyBtn = document.querySelector('[data-copy-target]');
+  if (algo === 'HS256') {
+    secretSection.style.display = 'block';
+    asymSection.style.display = 'none';
+    secretDescription.textContent = '';
+    secretLabel.textContent = 'Secret';
+    copyBtn.dataset.copyTarget = 'secretTextarea';
+  } else {
+    secretSection.style.display = 'none';
+    asymSection.style.display = 'block';
+    secretDescription.textContent = '';
+    copyBtn.dataset.copyTarget = 'privateKeyTextarea';
+  }
+}
 
 function base64UrlEncode(str) {
   return btoa(unescape(encodeURIComponent(str)))
@@ -78,12 +101,30 @@ async function computeSignature(data, secret, alg) {
       .replace(/\+/g, '-')
       .replace(/\//g, '_');
   } else if (alg === 'RS256') {
-    const key = await importRsaPrivateKey(secret);
-    const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(data));
-    return btoa(String.fromCharCode(...new Uint8Array(signature)))
-      .replace(/=/g, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_');
+    try {
+      const key = await importRsaPrivateKey(secret);
+      const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(data));
+      return btoa(String.fromCharCode(...new Uint8Array(signature)))
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_');
+    } catch (e) {
+      console.error('Failed to import RSA key:', e);
+      return '';
+    }
+  } else if (alg === 'ES256') {
+    try {
+      const key = await importEcdsaPrivateKey(secret);
+      const derSignature = await crypto.subtle.sign('ECDSA', key, new TextEncoder().encode(data));
+      const jwtSignature = derToJwtEcSignature(new Uint8Array(derSignature));
+      return btoa(String.fromCharCode(...jwtSignature))
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_');
+    } catch (e) {
+      console.error('Failed to import EC key:', e);
+      return '';
+    }
   } else {
     return '';
   }
@@ -108,6 +149,147 @@ function importRsaPrivateKey(pem) {
     false,
     ['sign']
   );
+}
+
+async function importRsaPublicKey(pem) {
+  try {
+    const pemHeader = "-----BEGIN PUBLIC KEY-----";
+    const pemFooter = "-----END PUBLIC KEY-----";
+    const pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
+    const binaryDer = atob(pemContents);
+    const der = new Uint8Array(binaryDer.length);
+    for (let i = 0; i < binaryDer.length; i++) {
+      der[i] = binaryDer.charCodeAt(i);
+    }
+    return await crypto.subtle.importKey(
+      'spki',
+      der,
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: 'SHA-256'
+      },
+      false,
+      ['verify']
+    );
+  } catch (e) {
+    throw new Error('Invalid public key PEM');
+  }
+}
+
+async function importEcdsaPrivateKey(pem) {
+  try {
+    const pemHeader = "-----BEGIN EC PRIVATE KEY-----";
+    const pemFooter = "-----END EC PRIVATE KEY-----";
+    const pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
+    const binaryDer = atob(pemContents);
+    const der = new Uint8Array(binaryDer.length);
+    for (let i = 0; i < binaryDer.length; i++) {
+      der[i] = binaryDer.charCodeAt(i);
+    }
+    return await crypto.subtle.importKey(
+      'pkcs8',
+      der,
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256'
+      },
+      false,
+      ['sign']
+    );
+  } catch (e) {
+    throw new Error('Invalid EC private key PEM');
+  }
+}
+
+async function importEcdsaPublicKey(pem) {
+  try {
+    const pemHeader = "-----BEGIN PUBLIC KEY-----";
+    const pemFooter = "-----END PUBLIC KEY-----";
+    const pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
+    const binaryDer = atob(pemContents);
+    const der = new Uint8Array(binaryDer.length);
+    for (let i = 0; i < binaryDer.length; i++) {
+      der[i] = binaryDer.charCodeAt(i);
+    }
+    return await crypto.subtle.importKey(
+      'spki',
+      der,
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256'
+      },
+      false,
+      ['verify']
+    );
+  } catch (e) {
+    throw new Error('Invalid EC public key PEM');
+  }
+}
+
+function jwtEcSignatureToDer(signature) {
+  // signature is base64url decoded, 64 bytes: r (32) + s (32)
+  const r = signature.slice(0, 32);
+  const s = signature.slice(32, 64);
+  
+  // Convert to big-endian integers, remove leading zeros
+  function toAsn1Integer(bytes) {
+    let start = 0;
+    while (start < bytes.length - 1 && bytes[start] === 0) start++;
+    if (bytes[start] & 0x80) {
+      // Negative, add leading zero
+      return new Uint8Array([0, ...bytes.slice(start)]);
+    }
+    return bytes.slice(start);
+  }
+  
+  const rAsn1 = toAsn1Integer(r);
+  const sAsn1 = toAsn1Integer(s);
+  
+  // DER SEQUENCE { INTEGER r, INTEGER s }
+  const rLen = rAsn1.length;
+  const sLen = sAsn1.length;
+  const totalLen = 2 + rLen + 2 + sLen; // 0x30 totalLen 0x02 rLen r 0x02 sLen s
+  const der = new Uint8Array(2 + totalLen);
+  der[0] = 0x30; // SEQUENCE
+  der[1] = totalLen;
+  der[2] = 0x02; // INTEGER
+  der[3] = rLen;
+  der.set(rAsn1, 4);
+  const sStart = 4 + rLen;
+  der[sStart] = 0x02; // INTEGER
+  der[sStart + 1] = sLen;
+  der.set(sAsn1, sStart + 2);
+  
+  return der;
+}
+
+function derToJwtEcSignature(der) {
+  // Parse DER SEQUENCE { INTEGER r, INTEGER s }
+  if (der[0] !== 0x30) throw new Error('Invalid DER');
+  const seqLen = der[1];
+  let pos = 2;
+  if (der[pos] !== 0x02) throw new Error('Invalid r');
+  const rLen = der[pos + 1];
+  pos += 2;
+  const r = der.slice(pos, pos + rLen);
+  pos += rLen;
+  if (der[pos] !== 0x02) throw new Error('Invalid s');
+  const sLen = der[pos + 1];
+  pos += 2;
+  const s = der.slice(pos, pos + sLen);
+  
+  // Pad r and s to 32 bytes
+  function padTo32(bytes) {
+    if (bytes.length > 32) throw new Error('Too long');
+    const padded = new Uint8Array(32);
+    padded.set(bytes, 32 - bytes.length);
+    return padded;
+  }
+  
+  const rPadded = padTo32(r);
+  const sPadded = padTo32(s);
+  
+  return new Uint8Array([...rPadded, ...sPadded]);
 }
 
 function parseJwt(token) {
@@ -185,6 +367,21 @@ function updateDisplay(token) {
 
   // Update algorithm dropdown
   algoSelect.value = tokenMeta.header.alg || 'HS256';
+  updateSecretSections();
+  // Update signature algorithm display
+  const sigAlgo = document.getElementById('sigAlgo');
+  const sigCode = document.getElementById('sigCode');
+  const alg = tokenMeta.header.alg;
+  let algoName = 'HMACSHA256';
+  if (alg === 'HS256') algoName = 'HMACSHA256';
+  else if (alg === 'RS256') algoName = 'RSASHA256';
+  else if (alg === 'ES256') algoName = 'ECDSASHA256';
+  else algoName = alg;
+  sigAlgo.textContent = algoName;
+  sigCode.textContent = `${algoName}(
+  base64UrlEncode(header) + '.' + base64UrlEncode(payload),
+  your-secret
+)`;
   // if (tokenMeta.payload.exp) {
   //   expiryText.textContent = new Date(tokenMeta.payload.exp * 1000).toLocaleString();
   // } else {
@@ -308,6 +505,8 @@ function showToast(message) {
   }, 3000);
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  updateSecretSections();
 document.querySelectorAll('[data-copy-target]').forEach((btn) => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.copyTarget;
@@ -321,6 +520,10 @@ document.querySelectorAll('[data-copy-target]').forEach((btn) => {
       toastMessage = 'Header copied';
     } else if (target === 'payloadJson') {
       toastMessage = 'Payload copied';
+    } else if (target === 'privateKeyTextarea') {
+      toastMessage = 'Private key copied';
+    } else if (target === 'secretTextarea') {
+      toastMessage = 'Secret copied';
     }
     showToast(toastMessage);
 
@@ -393,7 +596,7 @@ payloadJson.addEventListener('input', async () => {
       const headerEncoded = base64UrlEncode(JSON.stringify(tokenMeta.header));
       const newPayloadEncoded = base64UrlEncode(JSON.stringify(newPayload));
       const data = `${headerEncoded}.${newPayloadEncoded}`;
-      const newSignature = await computeSignature(data, secret);
+      const newSignature = await computeSignature(data, secret, tokenMeta.header.alg);
       const newToken = `${data}.${newSignature}`;
       jwtInput.value = newToken;
       updateStatus(parseJwt(newToken));
@@ -431,43 +634,70 @@ secretEditable.addEventListener('blur', () => {
 });
 
 // Verify button
-verifyBtn.addEventListener('click', async () => {
-  const currentToken = jwtInput.value.trim();
-  const tokenMeta = parseJwt(currentToken);
-  const currentSecret = secretTextarea.value;
-  if (tokenMeta && tokenMeta.signature && currentSecret) {
+if (verifyBtn) {
+  verifyBtn.addEventListener('click', async () => {
+    const currentToken = jwtInput.value.trim();
+    const tokenMeta = parseJwt(currentToken);
+    if (!tokenMeta || !tokenMeta.signature) return;
     const data = base64UrlEncode(JSON.stringify(tokenMeta.header)) + '.' + base64UrlEncode(JSON.stringify(tokenMeta.payload));
     try {
-      const expected = await computeSignature(data, currentSecret);
-      if (expected === tokenMeta.signature) {
+      let isValid = false;
+      const algo = tokenMeta.header.alg;
+      if (algo === 'HS256') {
+        const secretValue = secretTextarea.value;
+        const expected = await computeSignature(data, secretValue, 'HS256');
+        isValid = expected === tokenMeta.signature;
+      } else if (algo === 'RS256') {
+        const publicKey = publicKeyTextarea.value;
+        const pubKey = await importRsaPublicKey(publicKey);
+        const signatureBytes = base64UrlDecode(tokenMeta.signature);
+        if (signatureBytes) {
+          isValid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', pubKey, signatureBytes, new TextEncoder().encode(data));
+        }
+      } else if (algo === 'ES256') {
+        const publicKey = publicKeyTextarea.value;
+        const pubKey = await importEcdsaPublicKey(publicKey);
+        const signatureBytes = base64UrlDecode(tokenMeta.signature);
+        if (signatureBytes && signatureBytes.length === 64) {
+          const derSignature = jwtEcSignatureToDer(new Uint8Array(signatureBytes));
+          isValid = await crypto.subtle.verify('ECDSA', pubKey, derSignature, new TextEncoder().encode(data));
+        }
+      }
+      if (isValid) {
         statusMessage.classList.remove('invalid');
         statusIcon.textContent = '✔';
         statusLabel.textContent = 'Signature verified';
-        showToast('Signature verified');
       } else {
         statusMessage.classList.add('invalid');
         statusIcon.textContent = '⨯';
         statusLabel.textContent = 'Signature invalid';
-        showToast('Signature invalid');
       }
     } catch (e) {
       statusMessage.classList.add('invalid');
       statusIcon.textContent = '⨯';
       statusLabel.textContent = 'Verification failed';
-      showToast('Verification failed');
+      showToast('Invalid key');
     }
-  } else {
-    showToast('No secret or JWT to verify');
-  }
-});
+  });
+}
 
-// Apply button for secret
-applyBtn.addEventListener('click', async () => {
-  secret = secretTextarea.value;
-  secretEditable.textContent = secret || 'your-secret';
-  await updateJwt();
-  showToast('Secret applied');
-});
+// Apply button
+if (applyBtn) {
+  applyBtn.addEventListener('click', async () => {
+    const algo = algoSelect.value;
+    if (algo === 'HS256') {
+      secret = secretTextarea.value;
+    } else {
+      secret = privateKeyTextarea.value;
+    }
+    secretEditable.textContent = secret || 'your-secret';
+    try {
+      await updateJwt();
+    } catch (e) {
+      showToast('Invalid key');
+    }
+  });
+}
 
 // Eye button listeners
 document.querySelectorAll('.eye-btn').forEach(btn => {
@@ -533,6 +763,7 @@ updateDatetimeBtn.addEventListener('click', async () => {
 
 // Update algorithm dropdown when changed
 algoSelect.addEventListener('change', async () => {
+  updateSecretSections();
   const currentToken = jwtInput.value.trim();
   const tokenMeta = parseJwt(currentToken);
   if (tokenMeta) {
@@ -665,4 +896,5 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     window.updateBtnAttached = true;
   }
+});
 });
