@@ -8,86 +8,84 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <main class="main-stage">
-      <section class="input-panel">
-        <div class="panel-head">
+  <main class="main-stage">
+    <section class="input-panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">JWT Debugger</p>
+          <h1>Inspect JSON Web Tokens instantly</h1>
+        </div>
+        <div class="main-actions">
+          <button id="copyBtn">Copy</button>
+          <button id="pasteBtn">Paste</button>
+          <button id="sampleBtn">Sample</button>
+          <button id="clearBtn">Clear</button>
+        </div>
+      </div>
+
+      <textarea
+        id="jwtInput"
+        spellcheck="false"
+        placeholder="Paste your JWT here"
+      ></textarea>
+
+      <div class="status-row">
+        <div class="status-pill" id="statusMessage">
+            <span class="status-icon">✔</span>
+            <span class="status-label">Signature status</span>
+          </div>
+        <label class="algo">
+          Algorithm
+          <select id="algoSelect">
+            <option>HS256</option>
+            <option>RS256</option>
+            <option>ES256</option>
+            <option>PS256</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="decode-panel">
+      <article class="card">
+        <div class="card-head">
           <div>
-            <p class="eyebrow">JWT Debugger</p>
-            <h1>Inspect JSON Web Tokens instantly</h1>
+            <p class="card-label">Header</p>
+            <small>typ · alg</small>
           </div>
-          <div class="main-actions">
-            <button id="copyBtn">Copy</button>
-            <button id="pasteBtn">Paste</button>
-            <button id="sampleBtn">Sample</button>
-            <button id="clearBtn">Clear</button>
+          <button class="mini" data-copy-target="headerJson">Copy</button>
+        </div>
+        <pre id="headerJson" contenteditable="true">{ }</pre>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <p class="card-label">Payload</p>
+            <small>iss · sub · exp · iat</small>
+          </div>
+          <div class="card-actions">
+            <button class="mini eye-btn" title="View/Edit iat & exp">👁</button>
+            <button class="mini" data-copy-target="payloadJson">Copy</button>
           </div>
         </div>
+        <pre id="payloadJson" contenteditable="true">{ }</pre>
+      </article>
 
-        <textarea
-          id="jwtInput"
-          spellcheck="false"
-          placeholder="Paste your JWT here"
-        ></textarea>
-
-        <div class="status-row">
-          <div class="status-pill" id="statusMessage">
-              <span class="status-icon">✔</span>
-              <span class="status-label">Signature status</span>
-            </div>
-          <label class="algo">
-            Algorithm
-            <select id="algoSelect">
-              <option>HS256</option>
-              <option>RS256</option>
-              <option>ES256</option>
-              <option>PS256</option>
-            </select>
-          </label>
+      <article class="card signature-card">
+        <div class="card-head">
+          <p class="card-label">Signature</p>
+          <small>HMACSHA256</small>
         </div>
-      </section>
-
-      <section class="decode-panel">
-        <article class="card">
-          <div class="card-head">
-            <div>
-              <p class="card-label">Header</p>
-              <small>typ · alg</small>
-            </div>
-            <button class="mini" data-copy-target="headerJson">Copy</button>
-          </div>
-          <pre id="headerJson" contenteditable="true">{ }</pre>
-        </article>
-
-        <article class="card">
-          <div class="card-head">
-            <div>
-              <p class="card-label">Payload</p>
-              <small>iss · sub · exp · iat</small>
-            </div>
-            <div class="card-actions">
-              <button class="mini eye-btn" title="View/Edit iat & exp">👁</button>
-              <button class="mini" data-copy-target="payloadJson">Copy</button>
-            </div>
-          </div>
-          <pre id="payloadJson" contenteditable="true">{ }</pre>
-        </article>
-
-        <article class="card signature-card">
-          <div class="card-head">
-            <p class="card-label">Signature</p>
-            <small>HMACSHA256</small>
-          </div>
-          <code>
+        <code>
 HMACSHA256(
   base64UrlEncode(header) + '.' + base64UrlEncode(payload),
   your-secret
 )
-          </code>
-        </article>
-      </section>
-    </main>
-  </div>
+        </code>
+      </article>
+    </section>
+  </main>
 
   <div id="datetimeModal" class="modal">
     <div class="modal-content">
