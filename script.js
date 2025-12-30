@@ -115,8 +115,14 @@ async function computeSignature(data, secret, alg) {
   } else if (alg === 'ES256') {
     try {
       const key = await importEcdsaPrivateKey(secret);
-      const derSignature = await crypto.subtle.sign('ECDSA', key, new TextEncoder().encode(data));
-      const jwtSignature = derToJwtEcSignature(new Uint8Array(derSignature));
+      const derSignature = await crypto.subtle.sign({ name: 'ECDSA', hash: { name: 'SHA-256' } }, key, new TextEncoder().encode(data));
+      const signatureArray = new Uint8Array(derSignature);
+      let jwtSignature;
+      if (signatureArray.length === 64) {
+        jwtSignature = signatureArray;
+      } else {
+        jwtSignature = derToJwtEcSignature(signatureArray);
+      }
       return btoa(String.fromCharCode(...jwtSignature))
         .replace(/=/g, '')
         .replace(/\+/g, '-')
@@ -178,9 +184,15 @@ async function importRsaPublicKey(pem) {
 
 async function importEcdsaPrivateKey(pem) {
   try {
-    const pemHeader = "-----BEGIN EC PRIVATE KEY-----";
-    const pemFooter = "-----END EC PRIVATE KEY-----";
-    const pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
+    let pemHeader = "-----BEGIN EC PRIVATE KEY-----";
+    let pemFooter = "-----END EC PRIVATE KEY-----";
+    let pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
+    if (pemContents === pem.replace(/\s/g, '')) {
+      // Not EC specific, try PKCS#8
+      pemHeader = "-----BEGIN PRIVATE KEY-----";
+      pemFooter = "-----END PRIVATE KEY-----";
+      pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
+    }
     const binaryDer = atob(pemContents);
     const der = new Uint8Array(binaryDer.length);
     for (let i = 0; i < binaryDer.length; i++) {
@@ -639,10 +651,21 @@ if (verifyBtn) {
     const currentToken = jwtInput.value.trim();
     const tokenMeta = parseJwt(currentToken);
     if (!tokenMeta || !tokenMeta.signature) return;
+    const algo = tokenMeta.header.alg;
+    if (algo === 'HS256') {
+      if (!secretTextarea.value.trim()) {
+        showToast('Secret is required for verification');
+        return;
+      }
+    } else {
+      if (!publicKeyTextarea.value.trim()) {
+        showToast('Public key is required for verification');
+        return;
+      }
+    }
     const data = base64UrlEncode(JSON.stringify(tokenMeta.header)) + '.' + base64UrlEncode(JSON.stringify(tokenMeta.payload));
     try {
       let isValid = false;
-      const algo = tokenMeta.header.alg;
       if (algo === 'HS256') {
         const secretValue = secretTextarea.value;
         const expected = await computeSignature(data, secretValue, 'HS256');
@@ -660,7 +683,7 @@ if (verifyBtn) {
         const signatureBytes = base64UrlDecode(tokenMeta.signature);
         if (signatureBytes && signatureBytes.length === 64) {
           const derSignature = jwtEcSignatureToDer(new Uint8Array(signatureBytes));
-          isValid = await crypto.subtle.verify('ECDSA', pubKey, derSignature, new TextEncoder().encode(data));
+          isValid = await crypto.subtle.verify({ name: 'ECDSA', hash: { name: 'SHA-256' } }, pubKey, derSignature, new TextEncoder().encode(data));
         }
       }
       if (isValid) {
@@ -673,10 +696,11 @@ if (verifyBtn) {
         statusLabel.textContent = 'Signature invalid';
       }
     } catch (e) {
-      statusMessage.classList.add('invalid');
-      statusIcon.textContent = '⨯';
-      statusLabel.textContent = 'Verification failed';
-      showToast('Invalid key');
+      let message = 'Invalid key';
+      if (algo === 'RS256') message = 'Invalid RSA public key';
+      else if (algo === 'ES256') message = 'Invalid EC public key';
+      else if (algo === 'PS256') message = 'Invalid RSA-PSS public key';
+      showToast(message);
     }
   });
 }
@@ -685,16 +709,30 @@ if (verifyBtn) {
 if (applyBtn) {
   applyBtn.addEventListener('click', async () => {
     const algo = algoSelect.value;
+    let keyValue = '';
     if (algo === 'HS256') {
-      secret = secretTextarea.value;
+      keyValue = secretTextarea.value;
+      if (!keyValue.trim()) {
+        showToast('Secret is required for signing');
+        return;
+      }
     } else {
-      secret = privateKeyTextarea.value;
+      keyValue = privateKeyTextarea.value;
+      if (!keyValue.trim()) {
+        showToast('Private key is required for signing');
+        return;
+      }
     }
+    secret = keyValue;
     secretEditable.textContent = secret || 'your-secret';
     try {
       await updateJwt();
     } catch (e) {
-      showToast('Invalid key');
+      let message = 'Invalid key';
+      if (algo === 'RS256') message = 'Invalid RSA private key';
+      else if (algo === 'ES256') message = 'Invalid EC private key';
+      else if (algo === 'PS256') message = 'Invalid RSA-PSS private key';
+      showToast(message);
     }
   });
 }
