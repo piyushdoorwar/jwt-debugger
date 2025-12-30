@@ -140,19 +140,21 @@ body::before {
   min-height: 200px;
   border-radius: 28px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.04);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
   color: #fff;
   padding: 18px;
   font-size: 15px;
   font-family: 'Space Grotesk', monospace;
   resize: vertical;
-  transition: border 0.2s ease, background 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .input-panel textarea:focus {
   outline: none;
   border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), 0 0 20px var(--accent), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .panel-head {
@@ -167,6 +169,8 @@ body::before {
   font-size: 32px;
   padding-bottom: 20px;
   line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  animation: fadeInUp 1s ease-out;
 }
 
 .eyebrow {
@@ -176,6 +180,18 @@ body::before {
   font-size: 24px;
   font-weight: bold;
   padding-bottom: 10px;
+  text-shadow: 0 0 15px var(--accent), 0 0 30px var(--accent);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .main-actions {
@@ -186,17 +202,19 @@ body::before {
 .main-actions button {
   border-radius: 999px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
   color: #fff;
   padding: 10px 18px;
   font-size: 14px;
   cursor: pointer;
-  transition: border 0.2s ease, transform 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .main-actions button:hover {
   border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 15px var(--accent);
 }
 
 .status-row {
@@ -281,7 +299,7 @@ body::before {
 
 .card pre,
 .card code {
-  background: rgba(255, 255, 255, 0.02);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
   border-radius: 18px;
   padding: 14px;
   font-size: 14px;
@@ -290,20 +308,25 @@ body::before {
   white-space: pre-wrap;
   word-break: break-word;
   outline: none; /* for contenteditable */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .mini {
   border: 1px solid transparent;
   border-radius: 14px;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
   color: #fff;
   cursor: pointer;
   font-size: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .mini:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Modal styles */
