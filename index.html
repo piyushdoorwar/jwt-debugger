@@ -65,7 +65,10 @@
               <p class="card-label">Payload</p>
               <small>iss · sub · exp · iat</small>
             </div>
-            <button class="mini" data-copy-target="payloadJson">Copy</button>
+            <div class="card-actions">
+              <button class="mini eye-btn" title="View/Edit iat & exp">👁</button>
+              <button class="mini" data-copy-target="payloadJson">Copy</button>
+            </div>
           </div>
           <pre id="payloadJson" contenteditable="true">{ }</pre>
         </article>
@@ -84,6 +87,28 @@ HMACSHA256(
         </article>
       </section>
     </main>
+  </div>
+
+  <div id="datetimeModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Edit DateTime</h2>
+      <div class="modal-row">
+        <div class="modal-column">
+          <h3>IAT</h3>
+          <label>Unix: <input type="number" id="iatUnixInput"></label>
+          <label>UTC: <input type="text" id="iatUtcInput"></label>
+          <label>Relative: <span id="iatRelativeSpan"></span></label>
+        </div>
+        <div class="modal-column">
+          <h3>EXP</h3>
+          <label>Unix: <input type="number" id="expUnixInput"></label>
+          <label>UTC: <input type="text" id="expUtcInput"></label>
+          <label>Relative: <span id="expRelativeSpan"></span></label>
+        </div>
+      </div>
+      <button id="updateDatetimeBtn">Update</button>
+    </div>
   </div>
 
   <script src="script.js"></script>

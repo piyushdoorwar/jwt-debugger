@@ -1,5 +1,5 @@
 const sampleToken =
-  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4iLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTYzMDY2MjIxNX0.pz_pRefsOI9vFk0DmIlabrh1c0YnVhEjW5iJY1ULYF0';
+  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4iLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MjAwMDAwMDAwMH0.pz_pRefsOI9vFk0DmIlabrh1c0YnVhEjW5iJY1ULYF0';
 
 const jwtInput = document.getElementById('jwtInput');
 const headerJson = document.getElementById('headerJson');
@@ -25,7 +25,15 @@ const clearBtn = document.getElementById('clearBtn');
 const algoSelect = document.getElementById('algoSelect');
 // const applyHeaderBtn = document.getElementById('applyHeaderBtn');
 // const applyPayloadBtn = document.getElementById('applyPayloadBtn');
-// const timeCopyBtn = document.getElementById('timeCopy');
+const datetimeModal = document.getElementById('datetimeModal');
+const iatUnixInput = document.getElementById('iatUnixInput');
+const expUnixInput = document.getElementById('expUnixInput');
+const iatUtcInput = document.getElementById('iatUtcInput');
+const expUtcInput = document.getElementById('expUtcInput');
+const iatRelativeSpan = document.getElementById('iatRelativeSpan');
+const expRelativeSpan = document.getElementById('expRelativeSpan');
+const updateDatetimeBtn = document.getElementById('updateDatetimeBtn');
+const closeModal = datetimeModal.querySelector('.close');
 
 function base64UrlEncode(str) {
   return btoa(unescape(encodeURIComponent(str)))
@@ -84,7 +92,7 @@ function updateStatus(tokenMeta) {
   } else {
     statusMessage.classList.remove('invalid');
     statusIcon.textContent = '✔';
-    statusLabel.textContent = 'Signature segments intact (mock verify)';
+    statusLabel.textContent = 'Signature segments intact';
   }
 }
 
@@ -138,20 +146,20 @@ function updateDisplay(token) {
 //   unixInput.value = value || '';
 // }
 
-// function formatDuration(seconds) {
-//   if (seconds === undefined || Number.isNaN(seconds)) return '—';
-//   const s = Math.max(seconds, 0);
-//   const days = Math.floor(s / 86400);
-//   const hours = Math.floor((s % 86400) / 3600);
-//   const minutes = Math.floor((s % 3600) / 60);
-//   const secs = Math.floor(s % 60);
-//   const parts = [];
-//   if (days) parts.push(`${days}d`);
-//   if (hours) parts.push(`${hours}h`);
-//   if (minutes) parts.push(`${minutes}m`);
-//   parts.push(`${secs}s`);
-//   return parts.join(' ');
-// }
+function formatDuration(seconds) {
+  if (seconds === undefined || Number.isNaN(seconds)) return '—';
+  const s = Math.max(seconds, 0);
+  const days = Math.floor(s / 86400);
+  const hours = Math.floor((s % 86400) / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const secs = Math.floor(s % 60);
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours) parts.push(`${hours}h`);
+  if (minutes) parts.push(`${minutes}m`);
+  parts.push(`${secs}s`);
+  return parts.join(' ');
+}
 
 // function updateTimePanel(value) {
 //   const unix = Number(value) || Math.floor(Date.now() / 1000);
@@ -164,21 +172,21 @@ function updateDisplay(token) {
 //   isLeap.textContent = isLeapYear(date.getUTCFullYear()) ? 'true' : 'false';
 // }
 
-// function describeRelative(diff) {
-//   const prefix = diff >= 0 ? 'from now' : 'ago';
-//   const [abs, unit] = formatRelativePoint(Math.abs(diff));
-//   return `${abs} ${prefix}`;
-// }
+function describeRelative(diff) {
+  const prefix = diff >= 0 ? 'from now' : 'ago';
+  const [abs, unit] = formatRelativePoint(Math.abs(diff));
+  return `${abs} ${prefix}`;
+}
 
-// function formatRelativePoint(diff) {
-//   const days = Math.floor(diff / 86400);
-//   const hours = Math.floor((diff % 86400) / 3600);
-//   const minutes = Math.floor((diff % 3600) / 60);
-//   if (days) return [`${days}d`, ''];
-//   if (hours) return [`${hours}h`, ''];
-//   if (minutes) return [`${minutes}m`, ''];
-//   return [`${Math.max(Math.floor(diff % 60), 1)}s`, ''];
-// }
+function formatRelativePoint(diff) {
+  const days = Math.floor(diff / 86400);
+  const hours = Math.floor((diff % 86400) / 3600);
+  const minutes = Math.floor((diff % 3600) / 60);
+  if (days) return [`${days}d`, ''];
+  if (hours) return [`${hours}h`, ''];
+  if (minutes) return [`${minutes}m`, ''];
+  return [`${Math.max(Math.floor(diff % 60), 1)}s`, ''];
+}
 
 // function getDayOfYear(date) {
 //   const start = new Date(Date.UTC(date.getUTCFullYear(), 0, 0));
@@ -325,6 +333,90 @@ payloadJson.addEventListener('input', () => {
   }
 });
 
+// Beautify header on blur
+headerJson.addEventListener('blur', () => {
+  const text = headerJson.textContent;
+  try {
+    const parsed = JSON.parse(text);
+    headerJson.textContent = JSON.stringify(parsed, null, 2);
+  } catch (e) {
+    // Leave as is if invalid
+  }
+});
+
+// Beautify payload on blur
+payloadJson.addEventListener('blur', () => {
+  const text = payloadJson.textContent;
+  try {
+    const parsed = JSON.parse(text);
+    payloadJson.textContent = JSON.stringify(parsed, null, 2);
+  } catch (e) {
+    // Leave as is if invalid
+  }
+});
+
+// Eye button listeners
+document.querySelectorAll('.eye-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tokenMeta = parseJwt(jwtInput.value.trim());
+    if (tokenMeta && tokenMeta.payload) {
+      const iat = tokenMeta.payload.iat || Math.floor(Date.now() / 1000);
+      const exp = tokenMeta.payload.exp || Math.floor(Date.now() / 1000) + 3600;
+      iatUnixInput.value = iat;
+      expUnixInput.value = exp;
+      updateModalFields();
+      datetimeModal.style.display = 'block';
+    }
+  });
+});
+
+// Close modal
+closeModal.addEventListener('click', () => {
+  datetimeModal.style.display = 'none';
+});
+
+window.addEventListener('click', (event) => {
+  if (event.target === datetimeModal) {
+    datetimeModal.style.display = 'none';
+  }
+});
+
+// Update modal fields
+function updateModalFields() {
+  const iat = parseInt(iatUnixInput.value, 10);
+  const exp = parseInt(expUnixInput.value, 10);
+  if (!isNaN(iat)) {
+    const date = new Date(iat * 1000);
+    iatUtcInput.value = date.toISOString();
+    iatRelativeSpan.textContent = describeRelative(iat - Date.now() / 1000);
+  }
+  if (!isNaN(exp)) {
+    const date = new Date(exp * 1000);
+    expUtcInput.value = date.toISOString();
+    expRelativeSpan.textContent = describeRelative(exp - Date.now() / 1000);
+  }
+}
+
+// Unix input changes
+iatUnixInput.addEventListener('input', updateModalFields);
+expUnixInput.addEventListener('input', updateModalFields);
+
+// Update button
+updateDatetimeBtn.addEventListener('click', () => {
+  const iat = parseInt(iatUnixInput.value, 10);
+  const exp = parseInt(expUnixInput.value, 10);
+  const tokenMeta = parseJwt(jwtInput.value.trim());
+  if (tokenMeta) {
+    const newPayload = { ...tokenMeta.payload };
+    if (!isNaN(iat)) newPayload.iat = iat;
+    if (!isNaN(exp)) newPayload.exp = exp;
+    payloadJson.textContent = JSON.stringify(newPayload, null, 2);
+    // Trigger the input listener to update JWT
+    payloadJson.dispatchEvent(new Event('input'));
+    datetimeModal.style.display = 'none';
+  }
+});
+
 // Update algorithm dropdown when changed
 algoSelect.addEventListener('change', () => {
   const currentToken = jwtInput.value.trim();
@@ -368,4 +460,93 @@ pasteBtn.addEventListener('click', async () => {
 
 window.addEventListener('DOMContentLoaded', () => {
   updateDisplay(sampleToken);
+  jwtInput.value = sampleToken;
+
+  // Eye button listeners
+  if (!window.eyeListenerAttached) {
+    document.querySelectorAll('.eye-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tokenMeta = parseJwt(jwtInput.value.trim());
+        if (tokenMeta && tokenMeta.payload) {
+          const iat = tokenMeta.payload.iat || Math.floor(Date.now() / 1000);
+          const exp = tokenMeta.payload.exp || Math.floor(Date.now() / 1000) + 3600;
+          iatUnixInput.value = iat;
+          expUnixInput.value = exp;
+          updateModalFields();
+          datetimeModal.style.display = 'block';
+        }
+      });
+    });
+    window.eyeListenerAttached = true;
+  }
+
+  // Close modal
+  if (!window.closeListenerAttached) {
+    closeModal.addEventListener('click', () => {
+      datetimeModal.style.display = 'none';
+    });
+    window.closeListenerAttached = true;
+  }
+
+  if (!window.windowClickAttached) {
+    window.addEventListener('click', (event) => {
+      if (event.target === datetimeModal) {
+        datetimeModal.style.display = 'none';
+      }
+    });
+    window.windowClickAttached = true;
+  }
+
+  // Unix input changes
+  if (!window.iatsInputAttached) {
+    iatUnixInput.addEventListener('input', updateModalFields);
+    window.iatsInputAttached = true;
+  }
+  if (!window.expInputAttached) {
+    expUnixInput.addEventListener('input', updateModalFields);
+    window.expInputAttached = true;
+  }
+
+  // UTC input changes
+  if (!window.iatUtcAttached) {
+    iatUtcInput.addEventListener('input', () => {
+      const date = new Date(iatUtcInput.value);
+      if (!isNaN(date.getTime())) {
+        const unix = Math.floor(date.getTime() / 1000);
+        iatUnixInput.value = unix;
+        updateModalFields();
+      }
+    });
+    window.iatUtcAttached = true;
+  }
+  if (!window.expUtcAttached) {
+    expUtcInput.addEventListener('input', () => {
+      const date = new Date(expUtcInput.value);
+      if (!isNaN(date.getTime())) {
+        const unix = Math.floor(date.getTime() / 1000);
+        expUnixInput.value = unix;
+        updateModalFields();
+      }
+    });
+    window.expUtcAttached = true;
+  }
+
+  // Update button
+  if (!window.updateBtnAttached) {
+    updateDatetimeBtn.addEventListener('click', () => {
+      const iat = parseInt(iatUnixInput.value, 10);
+      const exp = parseInt(expUnixInput.value, 10);
+      const tokenMeta = parseJwt(jwtInput.value.trim());
+      if (tokenMeta) {
+        const newPayload = { ...tokenMeta.payload };
+        if (!isNaN(iat)) newPayload.iat = iat;
+        if (!isNaN(exp)) newPayload.exp = exp;
+        payloadJson.textContent = JSON.stringify(newPayload, null, 2);
+        // Trigger the input listener to update JWT
+        payloadJson.dispatchEvent(new Event('input'));
+        datetimeModal.style.display = 'none';
+      }
+    });
+    window.updateBtnAttached = true;
+  }
 });
