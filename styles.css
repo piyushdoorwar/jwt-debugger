@@ -311,6 +311,39 @@ body::before {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
+.card textarea {
+  width: 100%;
+  min-height: 80px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  color: #fff;
+  padding: 14px;
+  font-size: 14px;
+  font-family: 'Space Grotesk', monospace;
+  resize: vertical;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.card textarea:focus {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 15px var(--accent), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+#secretEditable {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  padding: 0;
+  margin: 0;
+}
+
 .mini {
   border: 1px solid transparent;
   border-radius: 14px;

@@ -5,6 +5,11 @@ const jwtInput = document.getElementById('jwtInput');
 const headerJson = document.getElementById('headerJson');
 const payloadJson = document.getElementById('payloadJson');
 const statusMessage = document.getElementById('statusMessage');
+const secretTextarea = document.getElementById('secretTextarea');
+const secretEditable = document.getElementById('secretEditable');
+const verifyBtn = document.getElementById('verifyBtn');
+const applyBtn = document.getElementById('applyBtn');
+let secret = '';
 // const unixInput = document.getElementById('unixInput');
 // const localTime = document.getElementById('localTime');
 // const utcTime = document.getElementById('utcTime');
@@ -58,6 +63,22 @@ function base64UrlDecode(str) {
   }
 }
 
+async function computeSignature(data, secret) {
+  if (!secret) return '';
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
+  return btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
 function parseJwt(token) {
   if (!token) return null;
   const parts = token.split('.');
@@ -93,6 +114,20 @@ function updateStatus(tokenMeta) {
     statusMessage.classList.remove('invalid');
     statusIcon.textContent = '✔';
     statusLabel.textContent = 'Signature segments intact';
+  }
+}
+
+async function updateJwt() {
+  const currentToken = jwtInput.value.trim();
+  const tokenMeta = parseJwt(currentToken);
+  if (tokenMeta) {
+    const headerEncoded = base64UrlEncode(JSON.stringify(tokenMeta.header));
+    const payloadEncoded = base64UrlEncode(JSON.stringify(tokenMeta.payload));
+    const data = `${headerEncoded}.${payloadEncoded}`;
+    const newSignature = await computeSignature(data, secret);
+    const newToken = `${data}.${newSignature}`;
+    jwtInput.value = newToken;
+    updateStatus(parseJwt(newToken));
   }
 }
 
@@ -294,7 +329,7 @@ jwtInput.addEventListener('input', () => {
 });
 
 // Real-time update for header
-headerJson.addEventListener('input', () => {
+headerJson.addEventListener('input', async () => {
   const newHeaderText = headerJson.textContent;
   try {
     const newHeader = JSON.parse(newHeaderText);
@@ -303,7 +338,9 @@ headerJson.addEventListener('input', () => {
     if (tokenMeta) {
       const newHeaderEncoded = base64UrlEncode(JSON.stringify(newHeader));
       const payloadEncoded = base64UrlEncode(JSON.stringify(tokenMeta.payload));
-      const newToken = `${newHeaderEncoded}.${payloadEncoded}.${tokenMeta.signature}`;
+      const data = `${newHeaderEncoded}.${payloadEncoded}`;
+      const newSignature = await computeSignature(data, secret);
+      const newToken = `${data}.${newSignature}`;
       jwtInput.value = newToken;
       // Update algorithm
       algoSelect.value = newHeader.alg || 'HS256';
@@ -315,7 +352,7 @@ headerJson.addEventListener('input', () => {
 });
 
 // Real-time update for payload
-payloadJson.addEventListener('input', () => {
+payloadJson.addEventListener('input', async () => {
   const newPayloadText = payloadJson.textContent;
   try {
     const newPayload = JSON.parse(newPayloadText);
@@ -324,7 +361,9 @@ payloadJson.addEventListener('input', () => {
     if (tokenMeta) {
       const headerEncoded = base64UrlEncode(JSON.stringify(tokenMeta.header));
       const newPayloadEncoded = base64UrlEncode(JSON.stringify(newPayload));
-      const newToken = `${headerEncoded}.${newPayloadEncoded}.${tokenMeta.signature}`;
+      const data = `${headerEncoded}.${newPayloadEncoded}`;
+      const newSignature = await computeSignature(data, secret);
+      const newToken = `${data}.${newSignature}`;
       jwtInput.value = newToken;
       updateStatus(parseJwt(newToken));
     }
@@ -353,6 +392,49 @@ payloadJson.addEventListener('blur', () => {
   } catch (e) {
     // Leave as is if invalid
   }
+});
+
+// Beautify secret on blur for editable
+secretEditable.addEventListener('blur', () => {
+  // No beautify needed
+});
+
+// Verify button
+verifyBtn.addEventListener('click', async () => {
+  const currentToken = jwtInput.value.trim();
+  const tokenMeta = parseJwt(currentToken);
+  if (tokenMeta && tokenMeta.signature && secret) {
+    const data = base64UrlEncode(JSON.stringify(tokenMeta.header)) + '.' + base64UrlEncode(JSON.stringify(tokenMeta.payload));
+    try {
+      const expected = await computeSignature(data, secret);
+      if (expected === tokenMeta.signature) {
+        statusMessage.classList.remove('invalid');
+        statusIcon.textContent = '✔';
+        statusLabel.textContent = 'Signature verified';
+        showToast('Signature verified');
+      } else {
+        statusMessage.classList.add('invalid');
+        statusIcon.textContent = '⨯';
+        statusLabel.textContent = 'Signature invalid';
+        showToast('Signature invalid');
+      }
+    } catch (e) {
+      statusMessage.classList.add('invalid');
+      statusIcon.textContent = '⨯';
+      statusLabel.textContent = 'Verification failed';
+      showToast('Verification failed');
+    }
+  } else {
+    showToast('No secret or JWT to verify');
+  }
+});
+
+// Apply button for secret
+applyBtn.addEventListener('click', async () => {
+  secret = secretTextarea.value;
+  secretEditable.textContent = secret || 'your-secret';
+  await updateJwt();
+  showToast('Secret applied');
 });
 
 // Eye button listeners
@@ -402,7 +484,7 @@ iatUnixInput.addEventListener('input', updateModalFields);
 expUnixInput.addEventListener('input', updateModalFields);
 
 // Update button
-updateDatetimeBtn.addEventListener('click', () => {
+updateDatetimeBtn.addEventListener('click', async () => {
   const iat = parseInt(iatUnixInput.value, 10);
   const exp = parseInt(expUnixInput.value, 10);
   const tokenMeta = parseJwt(jwtInput.value.trim());
@@ -411,14 +493,14 @@ updateDatetimeBtn.addEventListener('click', () => {
     if (!isNaN(iat)) newPayload.iat = iat;
     if (!isNaN(exp)) newPayload.exp = exp;
     payloadJson.textContent = JSON.stringify(newPayload, null, 2);
-    // Trigger the input listener to update JWT
-    payloadJson.dispatchEvent(new Event('input'));
+    // Trigger the update
+    await updateJwt();
     datetimeModal.style.display = 'none';
   }
 });
 
 // Update algorithm dropdown when changed
-algoSelect.addEventListener('change', () => {
+algoSelect.addEventListener('change', async () => {
   const currentToken = jwtInput.value.trim();
   const tokenMeta = parseJwt(currentToken);
   if (tokenMeta) {
@@ -426,7 +508,9 @@ algoSelect.addEventListener('change', () => {
     headerJson.textContent = JSON.stringify(newHeader, null, 2);
     const newHeaderEncoded = base64UrlEncode(JSON.stringify(newHeader));
     const payloadEncoded = base64UrlEncode(JSON.stringify(tokenMeta.payload));
-    const newToken = `${newHeaderEncoded}.${payloadEncoded}.${tokenMeta.signature}`;
+    const data = `${newHeaderEncoded}.${payloadEncoded}`;
+    const newSignature = await computeSignature(data, secret);
+    const newToken = `${data}.${newSignature}`;
     jwtInput.value = newToken;
     updateStatus(parseJwt(newToken));
   }

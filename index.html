@@ -72,6 +72,20 @@
         <pre id="payloadJson" contenteditable="true">{ }</pre>
       </article>
 
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <p class="card-label">Secret</p>
+            <small>HMAC Secret Key</small>
+          </div>
+          <div class="card-actions">
+            <button class="mini" id="verifyBtn">Verify</button>
+            <button class="mini" id="applyBtn">Apply</button>
+          </div>
+        </div>
+        <textarea id="secretTextarea" placeholder="Enter your secret..."></textarea>
+      </article>
+
       <article class="card signature-card">
         <div class="card-head">
           <p class="card-label">Signature</p>
@@ -80,7 +94,7 @@
         <code>
 HMACSHA256(
   base64UrlEncode(header) + '.' + base64UrlEncode(payload),
-  your-secret
+  <span id="secretEditable" contenteditable="true">your-secret</span>
 )
         </code>
       </article>
