@@ -135,25 +135,59 @@ HMACSHA256(
     </section>
   </main>
 
-  <div id="datetimeModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2>Edit DateTime</h2>
-      <div class="modal-row">
-        <div class="modal-column">
-          <h3>IAT</h3>
-          <label>Unix: <input type="number" id="iatUnixInput"></label>
-          <label>UTC: <input type="text" id="iatUtcInput"></label>
-          <label>Relative: <span id="iatRelativeSpan"></span></label>
-        </div>
-        <div class="modal-column">
-          <h3>EXP</h3>
-          <label>Unix: <input type="number" id="expUnixInput"></label>
-          <label>UTC: <input type="text" id="expUtcInput"></label>
-          <label>Relative: <span id="expRelativeSpan"></span></label>
+  <div id="datetimeModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="datetimeModalTitle">
+    <div class="modal-content modal-content-large">
+      <div class="modal-header">
+        <h2 id="datetimeModalTitle">Edit iat &amp; exp</h2>
+        <button type="button" class="modal-close close" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-row">
+          <div class="modal-column">
+            <h3>IAT</h3>
+
+            <div class="modal-field">
+              <label for="iatUnixInput">Unix</label>
+              <input type="number" id="iatUnixInput" inputmode="numeric" />
+            </div>
+
+            <div class="modal-field">
+              <label for="iatUtcInput">UTC</label>
+              <input type="text" id="iatUtcInput" />
+            </div>
+
+            <div class="modal-field">
+              <span class="modal-field-label">Relative</span>
+              <div id="iatRelativeSpan" class="relative-pill"></div>
+            </div>
+          </div>
+
+          <div class="modal-column">
+            <h3>EXP</h3>
+
+            <div class="modal-field">
+              <label for="expUnixInput">Unix</label>
+              <input type="number" id="expUnixInput" inputmode="numeric" />
+            </div>
+
+            <div class="modal-field">
+              <label for="expUtcInput">UTC</label>
+              <input type="text" id="expUtcInput" />
+            </div>
+
+            <div class="modal-field">
+              <span class="modal-field-label">Relative</span>
+              <div id="expRelativeSpan" class="relative-pill"></div>
+            </div>
+          </div>
         </div>
       </div>
-      <button id="updateDatetimeBtn">Update</button>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary close">Cancel</button>
+        <button type="button" id="updateDatetimeBtn" class="btn btn-primary">Update</button>
+      </div>
     </div>
   </div>
 

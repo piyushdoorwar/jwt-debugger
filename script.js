@@ -741,7 +741,7 @@ document.querySelectorAll('.eye-btn').forEach(btn => {
       iatUnixInput.value = iat;
       expUnixInput.value = exp;
       updateModalFields();
-      datetimeModal.style.display = 'block';
+      datetimeModal.style.display = 'flex';
     }
   });
 });
@@ -852,7 +852,7 @@ window.addEventListener('DOMContentLoaded', () => {
           iatUnixInput.value = iat;
           expUnixInput.value = exp;
           updateModalFields();
-          datetimeModal.style.display = 'block';
+          datetimeModal.style.display = 'flex';
         }
       });
     });
