@@ -1,17 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6739B7"/>
-      <stop offset="100%" style="stop-color:#8B5CF6"/>
+    <radialGradient id="bg" cx="30%" cy="20%" r="90%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="55%" stop-color="#1E1B4B"/>
+      <stop offset="100%" stop-color="#0B1022"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
     </linearGradient>
+    <linearGradient id="shield" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 0.7 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <rect width="128" height="128" rx="16" fill="url(#bg)"/>
-  <circle cx="64" cy="64" r="48" fill="none" stroke="#FFD700" stroke-width="6" opacity="0.5">
-    <animateTransform attributeName="transform" type="rotate" values="0 64 64;360 64 64" dur="2s" repeatCount="indefinite"/>
+
+  <rect width="128" height="128" rx="18" fill="url(#bg)"/>
+
+  <circle cx="64" cy="64" r="46" fill="none" stroke="url(#ring)" stroke-width="6" opacity="0.8">
+    <animateTransform attributeName="transform" type="rotate" values="0 64 64;360 64 64" dur="3s" repeatCount="indefinite"/>
   </circle>
-  <circle cx="64" cy="64" r="40" fill="#FFD700">
-    <animate attributeName="r" values="32;48;32" dur="1.5s" repeatCount="indefinite"/>
-    <animate attributeName="fill" values="#FFD700;#4F8EF7;#FFD700" dur="1.5s" repeatCount="indefinite"/>
-  </circle>
-  <text x="64" y="76" font-family="Arial, sans-serif" font-size="28" font-weight="bold" text-anchor="middle" fill="white">JWT</text>
+
+  <g filter="url(#softGlow)">
+    <path d="M64 28 L92 40 V64 C92 82 79 96 64 104 C49 96 36 82 36 64 V40 Z" fill="url(#shield)"/>
+    <path d="M64 38 L82 46 V64 C82 76 74 86 64 92 C54 86 46 76 46 64 V46 Z" fill="none" stroke="#E0F2FE" stroke-width="2" opacity="0.9">
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="2.2s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <g>
+    <rect x="52" y="58" width="24" height="18" rx="4" fill="#0B1022" opacity="0.85"/>
+    <path d="M58 58 V54 C58 50 61 47 64 47 C67 47 70 50 70 54 V58" fill="none" stroke="#FDE047" stroke-width="3" stroke-linecap="round">
+      <animate attributeName="stroke" values="#FDE047;#22D3EE;#FDE047" dur="2.5s" repeatCount="indefinite"/>
+    </path>
+    <circle cx="64" cy="67" r="3.5" fill="#FDE047">
+      <animate attributeName="r" values="3;4.2;3" dur="1.6s" repeatCount="indefinite"/>
+    </circle>
+  </g>
 </svg>
