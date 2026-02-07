@@ -35,6 +35,15 @@
   <circle cx="116.034" cy="116.034" r="72" fill="none" stroke="url(#ring)" stroke-width="4" opacity="0.7"/>
 
   <g transform="translate(116.034 116.034)" filter="url(#softGlow)">
+    <animateTransform
+      attributeName="transform"
+      type="rotate"
+      from="0"
+      to="360"
+      dur="24s"
+      repeatCount="indefinite"
+      additive="sum"
+    />
     <rect x="-6" y="-70" width="12" height="34" rx="6" fill="#FFD700" transform="rotate(0)"/>
     <rect x="-6" y="-70" width="12" height="34" rx="6" fill="#8B5CF6" transform="rotate(30)"/>
     <rect x="-6" y="-70" width="12" height="34" rx="6" fill="#FFE55C" transform="rotate(60)"/>
