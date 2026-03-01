@@ -495,26 +495,23 @@ function copyToClipboard(value) {
 }
 
 function showToast(message) {
-  // Remove existing toast if any
-  const existingToast = document.querySelector('.toast');
-  if (existingToast) {
-    existingToast.remove();
+  return;
+}
+
+function flashActionIcon(button) {
+  if (!button) return;
+
+  if (button._actionStateTimeout) {
+    window.clearTimeout(button._actionStateTimeout);
   }
 
-  // Create new toast
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.textContent = message;
-  document.body.appendChild(toast);
-
-  // Show toast
-  setTimeout(() => toast.classList.add('show'), 10);
-
-  // Hide and remove toast after 3 seconds
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  button.classList.remove('is-activated');
+  void button.offsetWidth;
+  button.classList.add('is-activated');
+  button._actionStateTimeout = window.setTimeout(() => {
+    button.classList.remove('is-activated');
+    button._actionStateTimeout = null;
+  }, 500);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -525,22 +522,9 @@ document.querySelectorAll('[data-copy-target]').forEach((btn) => {
     const element = document.getElementById(target);
     const content = element?.textContent ?? '';
     copyToClipboard(content);
-
-    // Show appropriate toast based on what was copied
-    let toastMessage = 'Copied';
-    if (target === 'headerJson') {
-      toastMessage = 'Header copied';
-    } else if (target === 'payloadJson') {
-      toastMessage = 'Payload copied';
-    } else if (target === 'privateKeyTextarea') {
-      toastMessage = 'Private key copied';
-    } else if (target === 'secretTextarea') {
-      toastMessage = 'Secret copied';
+    if (content) {
+      flashActionIcon(btn);
     }
-    showToast(toastMessage);
-
-    btn.textContent = 'Copied';
-    setTimeout(() => (btn.textContent = 'Copy'), 1200);
   });
 });
 
@@ -561,12 +545,14 @@ document.querySelectorAll('[data-copy-target]').forEach((btn) => {
 sampleBtn.addEventListener('click', () => {
   jwtInput.value = sampleToken;
   updateDisplay(sampleToken);
+  flashActionIcon(sampleBtn);
   showToast('Sample JWT loaded');
 });
 
 clearBtn.addEventListener('click', () => {
   jwtInput.value = '';
   updateDisplay('');
+  flashActionIcon(clearBtn);
   showToast('JWT cleared');
 });
 
@@ -689,6 +675,7 @@ if (verifyBtn) {
         statusIcon.textContent = '⨯';
         statusLabel.textContent = 'Signature invalid';
       }
+      flashActionIcon(verifyBtn);
     } catch (e) {
       let message = 'Invalid key';
       if (algo === 'RS256') message = 'Invalid RSA public key';
@@ -721,6 +708,7 @@ if (applyBtn) {
     secretEditable.textContent = secret || 'your-secret';
     try {
       await updateJwt();
+      flashActionIcon(applyBtn);
     } catch (e) {
       let message = 'Invalid key';
       if (algo === 'RS256') message = 'Invalid RSA private key';
@@ -742,6 +730,7 @@ document.querySelectorAll('.eye-btn').forEach(btn => {
       expUnixInput.value = exp;
       updateModalFields();
       datetimeModal.style.display = 'flex';
+      flashActionIcon(btn);
     }
   });
 });
@@ -815,6 +804,7 @@ algoSelect.addEventListener('change', async () => {
 copyBtn.addEventListener('click', () => {
   if (jwtInput.value.trim()) {
     copyToClipboard(jwtInput.value.trim());
+    flashActionIcon(copyBtn);
     showToast('JWT copied to clipboard');
   } else {
     showToast('Nothing to copy');
@@ -827,6 +817,7 @@ pasteBtn.addEventListener('click', async () => {
     const text = await navigator.clipboard.readText();
     jwtInput.value = text;
     updateDisplay(text.trim());
+    flashActionIcon(pasteBtn);
     showToast('JWT pasted from clipboard');
   } catch (err) {
     showToast('Failed to paste from clipboard');
